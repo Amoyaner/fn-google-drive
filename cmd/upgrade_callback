@@ -1,0 +1,25 @@
+#!/bin/bash
+# 升级后脚本
+
+echo "升级完成，正在更新..."
+
+# 恢复配置
+if [ -d "/tmp/fn-google-drive/config.bak" ]; then
+    echo "恢复配置文件..."
+    cp -r /tmp/fn-google-drive/config.bak/* /tmp/fn-google-drive/config/
+    rm -rf /tmp/fn-google-drive/config.bak
+fi
+
+# 更新Node.js依赖
+cd "$TRIM_APPDEST/server"
+if [ -f "package.json" ]; then
+    echo "更新Node.js依赖..."
+    export PATH=/vol1/@appcenter/nodejs_v22/bin:$PATH
+    npm install --production
+fi
+
+# 设置权限
+chmod +x "$TRIM_APPDEST/cmd/"*
+
+echo "更新完成"
+exit 0

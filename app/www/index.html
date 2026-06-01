@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Drive 挂载管理</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 30px;
+    }
+    
+    .header h1 {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    .header p {
+      opacity: 0.9;
+      font-size: 14px;
+    }
+    
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+    
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1a73e8;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .card-title .icon {
+      font-size: 24px;
+    }
+    
+    /* 状态卡片 */
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    
+    .status-item {
+      background: #f8f9fa;
+      padding: 16px;
+      border-radius: 12px;
+      text-align: center;
+      transition: all 0.3s;
+    }
+    
+    .status-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .status-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+    
+    .status-label {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+    
+    .status-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .status-value.active {
+      color: #34a853;
+    }
+    
+    .status-value.inactive {
+      color: #ea4335;
+    }
+    
+    .status-value.warning {
+      color: #fbbc04;
+    }
+    
+    /* 容量显示 */
+    .capacity-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    
+    .capacity-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .capacity-title {
+      font-size: 16px;
+      opacity: 0.9;
+    }
+    
+    .capacity-refresh {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 0.3s;
+    }
+    
+    .capacity-refresh:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    
+    .capacity-bar-container {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      height: 24px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    
+    .capacity-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #4caf50, #8bc34a);
+      border-radius: 12px;
+      transition: width 0.5s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      min-width: 40px;
+    }
+    
+    .capacity-text {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    
+    .capacity-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 20px;
+    }
+    
+    .capacity-stat {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 16px;
+      border-radius: 12px;
+      text-align: center;
+    }
+    
+    .capacity-stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    
+    .capacity-stat-label {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+    
+    /* 表单 */
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+      margin-bottom: 8px;
+    }
+    
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+    
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      outline: none;
+      border-color: #1a73e8;
+    }
+    
+    .form-group textarea {
+      min-height: 200px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      resize: vertical;
+    }
+    
+    .form-check {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    
+    .form-check input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: #1a73e8;
+    }
+    
+    .form-check label {
+      font-size: 14px;
+      color: #333;
+      cursor: pointer;
+    }
+    
+    /* 按钮 */
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(26, 115, 232, 0.4);
+    }
+    
+    .btn-success {
+      background: linear-gradient(135deg, #34a853 0%, #1e8e3e 100%);
+      color: white;
+    }
+    
+    .btn-success:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(52, 168, 83, 0.4);
+    }
+    
+    .btn-danger {
+      background: linear-gradient(135deg, #ea4335 0%, #c5221f 100%);
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(234, 67, 53, 0.4);
+    }
+    
+    .btn-outline {
+      background: transparent;
+      border: 2px solid #1a73e8;
+      color: #1a73e8;
+    }
+    
+    .btn-outline:hover {
+      background: #1a73e8;
+      color: white;
+    }
+    
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+    
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    
+    /* 标签页 */
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid #e0e0e0;
+      margin-bottom: 24px;
+    }
+    
+    .tab {
+      padding: 12px 24px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: #666;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.3s;
+    }
+    
+    .tab:hover {
+      color: #1a73e8;
+    }
+    
+    .tab.active {
+      color: #1a73e8;
+      border-bottom-color: #1a73e8;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    /* 提示框 */
+    .alert {
+      padding: 16px 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    
+    .alert-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    
+    .alert-info {
+      background: #e8f0fe;
+      color: #1a73e8;
+      border: 1px solid #aecbfa;
+    }
+    
+    .alert-success {
+      background: #e6f4ea;
+      color: #1e8e3e;
+      border: 1px solid #a8dab5;
+    }
+    
+    .alert-warning {
+      background: #fef7e0;
+      color: #e37400;
+      border: 1px solid #fdd663;
+    }
+    
+    .alert-error {
+      background: #fce8e6;
+      color: #c5221f;
+      border: 1px solid #f5b5af;
+    }
+    
+    /* 日志 */
+    .log-container {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 16px;
+      border-radius: 10px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      max-height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    
+    /* 加载动画 */
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    /* 说明列表 */
+    .steps {
+      list-style: none;
+    }
+    
+    .steps li {
+      display: flex;
+      gap: 16px;
+      padding: 16px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .steps li:last-child {
+      border-bottom: none;
+    }
+    
+    .step-number {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    
+    .step-content h4 {
+      font-size: 15px;
+      color: #333;
+      margin-bottom: 4px;
+    }
+    
+    .step-content p {
+      font-size: 13px;
+      color: #666;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📁 Google Drive 远程挂载</h1>
+      <p>将 Google Drive 挂载到飞牛NAS文件管理器中使用</p>
+    </div>
+    
+    <!-- 容量显示卡片 -->
+    <div class="capacity-card" id="capacity-card">
+      <div class="capacity-header">
+        <span class="capacity-title">📊 存储空间</span>
+        <button class="capacity-refresh" onclick="refreshCapacity()">🔄 刷新</button>
+      </div>
+      
+      <div class="capacity-bar-container">
+        <div class="capacity-bar" id="capacity-bar" style="width: 0%">0%</div>
+      </div>
+      
+      <div class="capacity-text">
+        <span id="capacity-used">已用: 计算中...</span>
+        <span id="capacity-total">总计: 计算中...</span>
+      </div>
+      
+      <div class="capacity-stats">
+        <div class="capacity-stat">
+          <div class="capacity-stat-value" id="stat-used">--</div>
+          <div class="capacity-stat-label">已用空间</div>
+        </div>
+        <div class="capacity-stat">
+          <div class="capacity-stat-value" id="stat-free">--</div>
+          <div class="capacity-stat-label">可用空间</div>
+        </div>
+        <div class="capacity-stat">
+          <div class="capacity-stat-value" id="stat-trash">--</div>
+          <div class="capacity-stat-label">回收站</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 状态卡片 -->
+    <div class="card">
+      <div class="card-title">
+        <span class="icon">⚡</span>
+        系统状态
+      </div>
+      <div class="status-grid">
+        <div class="status-item">
+          <div class="status-icon" id="icon-rclone">📦</div>
+          <div class="status-label">rclone</div>
+          <div class="status-value" id="status-rclone">检测中...</div>
+        </div>
+        <div class="status-item">
+          <div class="status-icon" id="icon-config">⚙️</div>
+          <div class="status-label">配置状态</div>
+          <div class="status-value" id="status-config">检测中...</div>
+        </div>
+        <div class="status-item">
+          <div class="status-icon" id="icon-mount">📂</div>
+          <div class="status-label">挂载状态</div>
+          <div class="status-value" id="status-mount">检测中...</div>
+        </div>
+        <div class="status-item">
+          <div class="status-icon" id="icon-proxy">🌐</div>
+          <div class="status-label">代理状态</div>
+          <div class="status-value" id="status-proxy">检测中...</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 配置卡片 -->
+    <div class="card">
+      <div class="tabs">
+        <div class="tab active" data-tab="guide">使用指南</div>
+        <div class="tab" data-tab="config">配置 Google Drive</div>
+        <div class="tab" data-tab="proxy">代理设置</div>
+        <div class="tab" data-tab="logs">运行日志</div>
+      </div>
+      
+      <!-- 使用指南 -->
+      <div id="guide-tab" class="tab-content active">
+        <div class="alert alert-info">
+          <span class="alert-icon">💡</span>
+          <div>按照以下步骤将 Google Drive 挂载到飞牛NAS的远程挂载模块中</div>
+        </div>
+        
+        <ul class="steps">
+          <li>
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h4>配置 Google Drive</h4>
+              <p>切换到"配置 Google Drive"标签，粘贴您的 rclone 配置文件。如果没有配置文件，可以使用 rclone 工具在本地电脑上生成，或者点击"生成配置模板"手动创建。</p>
+            </div>
+          </li>
+          <li>
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h4>配置代理（可选）</h4>
+              <p>如果您在中国大陆，访问 Google Drive 需要代理。切换到"代理设置"标签，配置 HTTP 或 SOCKS5 代理。</p>
+            </div>
+          </li>
+          <li>
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h4>启动挂载</h4>
+              <p>点击"启动挂载"按钮，系统会自动将 Google Drive 挂载到本地目录，并添加到飞牛的远程挂载模块中。</p>
+            </div>
+          </li>
+          <li>
+            <div class="step-number">4</div>
+            <div class="step-content">
+              <h4>访问文件</h4>
+              <p>挂载成功后，在飞牛文件管理器的"远程挂载"中找到 Google Drive，即可像本地文件一样浏览和使用。容量信息会实时更新显示在上方。</p>
+            </div>
+          </li>
+        </ul>
+        
+        <div class="btn-group" style="margin-top: 20px;">
+          <button class="btn btn-success" onclick="startMount()">🚀 启动挂载</button>
+          <button class="btn btn-danger" onclick="stopMount()">⏹️ 停止挂载</button>
+        </div>
+      </div>
+      
+      <!-- 配置 Google Drive -->
+      <div id="config-tab" class="tab-content">
+        <div class="alert alert-warning">
+          <span class="alert-icon">⚠️</span>
+          <div>请确保您已有有效的 rclone 配置。可以通过本地电脑运行 <code>rclone config</code> 生成配置文件。</div>
+        </div>
+        
+        <div class="form-group">
+          <label>rclone 配置文件内容 (rclone.conf)</label>
+          <textarea id="rclone-config" placeholder="[gdrive]
+type = drive
+client_id = 你的客户端ID
+client_secret = 你的客户端密钥
+scope = drive
+token = {&quot;access_token&quot;:&quot;...&quot;,&quot;refresh_token&quot;:&quot;...&quot;}"></textarea>
+        </div>
+        
+        <div class="btn-group">
+          <button class="btn btn-outline" onclick="generateConfig()">📝 生成配置模板</button>
+          <button class="btn btn-primary" onclick="saveConfig()">💾 保存配置</button>
+        </div>
+      </div>
+      
+      <!-- 代理设置 -->
+      <div id="proxy-tab" class="tab-content">
+        <div class="alert alert-info">
+          <span class="alert-icon">🌐</span>
+          <div>中国大陆用户访问 Google Drive 需要配置代理。支持 HTTP 和 SOCKS5 两种代理类型。</div>
+        </div>
+        
+        <div class="form-check">
+          <input type="checkbox" id="proxy-enabled" onchange="toggleProxy()">
+          <label for="proxy-enabled">启用代理</label>
+        </div>
+        
+        <div id="proxy-fields" style="display: none;">
+          <div class="form-group">
+            <label>代理类型</label>
+            <select id="proxy-type">
+              <option value="http">HTTP 代理</option>
+              <option value="socks5">SOCKS5 代理</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>代理地址</label>
+            <input type="text" id="proxy-host" placeholder="例如: 127.0.0.1">
+          </div>
+          
+          <div class="form-group">
+            <label>代理端口</label>
+            <input type="text" id="proxy-port" placeholder="例如: 7890">
+          </div>
+          
+          <div class="form-group">
+            <label>用户名（可选）</label>
+            <input type="text" id="proxy-username" placeholder="如果代理需要认证">
+          </div>
+          
+          <div class="form-group">
+            <label>密码（可选）</label>
+            <input type="password" id="proxy-password" placeholder="代理认证密码">
+          </div>
+        </div>
+        
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="saveProxy()">💾 保存代理配置</button>
+          <button class="btn btn-outline" onclick="testProxy()">🔍 测试连接</button>
+        </div>
+      </div>
+      
+      <!-- 运行日志 -->
+      <div id="logs-tab" class="tab-content">
+        <div class="log-container" id="log-content">
+          加载日志中...
+        </div>
+        <div class="btn-group" style="margin-top: 16px;">
+          <button class="btn btn-outline" onclick="loadLogs()">🔄 刷新日志</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    const API_BASE = '';
+    
+    // 标签切换
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab + '-tab').classList.add('active');
+        
+        if (tab.dataset.tab === 'logs') loadLogs();
+      });
+    });
+    
+    // 加载状态
+    async function loadStatus() {
+      try {
+        const response = await fetch(API_BASE + '/api/status');
+        const status = await response.json();
+        
+        // 更新rclone状态
+        updateStatus('rclone', status.rcloneInstalled, status.rcloneInstalled ? '已安装' : '未安装');
+        
+        // 更新配置状态
+        updateStatus('config', status.gdriveConfigured, status.gdriveConfigured ? '已配置' : '未配置');
+        
+        // 更新挂载状态
+        updateStatus('mount', status.mounted, status.mounted ? '已挂载' : '未挂载');
+        
+        // 更新代理状态
+        updateStatus('proxy', status.proxyConfig.enabled, status.proxyConfig.enabled ? '已启用' : '未启用');
+        
+        // 加载代理配置
+        if (status.proxyConfig) {
+          document.getElementById('proxy-enabled').checked = status.proxyConfig.enabled;
+          document.getElementById('proxy-type').value = status.proxyConfig.type || 'http';
+          document.getElementById('proxy-host').value = status.proxyConfig.host || '';
+          document.getElementById('proxy-port').value = status.proxyConfig.port || '';
+          document.getElementById('proxy-username').value = status.proxyConfig.username || '';
+          document.getElementById('proxy-password').value = status.proxyConfig.password || '';
+          toggleProxy();
+        }
+      } catch (error) {
+        console.error('加载状态失败:', error);
+      }
+    }
+    
+    function updateStatus(key, active, text) {
+      const statusEl = document.getElementById(`status-${key}`);
+      const iconEl = document.getElementById(`icon-${key}`);
+      
+      statusEl.textContent = text;
+      statusEl.className = 'status-value ' + (active ? 'active' : 'inactive');
+      
+      if (key === 'mount' && active) {
+        iconEl.classList.add('pulse');
+      } else {
+        iconEl.classList.remove('pulse');
+      }
+    }
+    
+    // 加载容量
+    async function loadCapacity() {
+      try {
+        const response = await fetch(API_BASE + '/api/capacity');
+        const capacity = await response.json();
+        
+        if (capacity.error) {
+          document.getElementById('capacity-used').textContent = '已用: --';
+          document.getElementById('capacity-total').textContent = '总计: --';
+          document.getElementById('capacity-bar').style.width = '0%';
+          document.getElementById('capacity-bar').textContent = '0%';
+          return;
+        }
+        
+        const used = capacity.used || 0;
+        const free = capacity.free || 0;
+        const total = capacity.total || 0;
+        const trashed = capacity.trashed || 0;
+        
+        const percentage = total > 0 ? Math.round(used / total * 100) : 0;
+        
+        document.getElementById('capacity-bar').style.width = percentage + '%';
+        document.getElementById('capacity-bar').textContent = percentage + '%';
+        document.getElementById('capacity-used').textContent = '已用: ' + formatBytes(used);
+        document.getElementById('capacity-total').textContent = '总计: ' + formatBytes(total);
+        
+        document.getElementById('stat-used').textContent = formatBytes(used);
+        document.getElementById('stat-free').textContent = formatBytes(free);
+        document.getElementById('stat-trash').textContent = formatBytes(trashed);
+      } catch (error) {
+        console.error('加载容量失败:', error);
+      }
+    }
+    
+    // 刷新容量
+    async function refreshCapacity() {
+      const btn = event.target;
+      btn.disabled = true;
+      btn.textContent = '刷新中...';
+      
+      try {
+        await fetch(API_BASE + '/api/capacity/refresh', { method: 'POST' });
+        await loadCapacity();
+      } catch (error) {
+        console.error('刷新容量失败:', error);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🔄 刷新';
+      }
+    }
+    
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    // 切换代理
+    function toggleProxy() {
+      const enabled = document.getElementById('proxy-enabled').checked;
+      document.getElementById('proxy-fields').style.display = enabled ? 'block' : 'none';
+    }
+    
+    // 生成配置模板
+    function generateConfig() {
+      const config = `[gdrive]
+type = drive
+client_id = 你的Google Cloud客户端ID
+client_secret = 你的Google Cloud客户端密钥
+scope = drive
+token = {"access_token":"你的访问令牌","token_type":"Bearer","refresh_token":"你的刷新令牌","expiry":"2024-01-01T00:00:00Z"}
+`;
+      document.getElementById('rclone-config').value = config;
+      alert('配置模板已生成，请填入您的实际配置信息');
+    }
+    
+    // 保存配置
+    async function saveConfig() {
+      const config = document.getElementById('rclone-config').value;
+      if (!config.trim()) {
+        alert('请输入配置内容');
+        return;
+      }
+      
+      try {
+        const response = await fetch(API_BASE + '/api/rclone-config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ config })
+        });
+        const result = await response.json();
+        if (result.success) {
+          alert('配置已保存');
+          loadStatus();
+        }
+      } catch (error) {
+        alert('保存失败: ' + error.message);
+      }
+    }
+    
+    // 保存代理
+    async function saveProxy() {
+      const config = {
+        enabled: document.getElementById('proxy-enabled').checked,
+        type: document.getElementById('proxy-type').value,
+        host: document.getElementById('proxy-host').value,
+        port: document.getElementById('proxy-port').value,
+        username: document.getElementById('proxy-username').value,
+        password: document.getElementById('proxy-password').value
+      };
+      
+      try {
+        const response = await fetch(API_BASE + '/api/proxy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(config)
+        });
+        const result = await response.json();
+        if (result.success) {
+          alert('代理配置已保存');
+          loadStatus();
+        }
+      } catch (error) {
+        alert('保存失败: ' + error.message);
+      }
+    }
+    
+    // 测试代理
+    async function testProxy() {
+      const config = {
+        type: document.getElementById('proxy-type').value,
+        host: document.getElementById('proxy-host').value,
+        port: document.getElementById('proxy-port').value,
+        username: document.getElementById('proxy-username').value,
+        password: document.getElementById('proxy-password').value
+      };
+      
+      try {
+        const response = await fetch(API_BASE + '/api/proxy/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(config)
+        });
+        const result = await response.json();
+        alert(result.message);
+      } catch (error) {
+        alert('测试失败: ' + error.message);
+      }
+    }
+    
+    // 启动挂载
+    async function startMount() {
+      try {
+        const response = await fetch(API_BASE + '/api/mount/start', { method: 'POST' });
+        const result = await response.json();
+        alert(result.message);
+        loadStatus();
+        loadCapacity();
+      } catch (error) {
+        alert('启动失败: ' + error.message);
+      }
+    }
+    
+    // 停止挂载
+    async function stopMount() {
+      if (!confirm('确定要停止挂载吗？')) return;
+      
+      try {
+        const response = await fetch(API_BASE + '/api/mount/stop', { method: 'POST' });
+        const result = await response.json();
+        alert(result.message);
+        loadStatus();
+      } catch (error) {
+        alert('停止失败: ' + error.message);
+      }
+    }
+    
+    // 加载日志
+    async function loadLogs() {
+      try {
+        const response = await fetch(API_BASE + '/api/logs');
+        const result = await response.json();
+        document.getElementById('log-content').textContent = result.logs || '暂无日志';
+      } catch (error) {
+        document.getElementById('log-content').textContent = '加载日志失败: ' + error.message;
+      }
+    }
+    
+    // 初始化
+    loadStatus();
+    loadCapacity();
+    
+    // 定时刷新（每10秒）
+    setInterval(loadStatus, 10000);
+    setInterval(loadCapacity, 10000);
+  </script>
+</body>
+</html>

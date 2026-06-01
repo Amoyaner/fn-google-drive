@@ -1,0 +1,21 @@
+#!/bin/bash
+# 安装前脚本
+
+echo "准备安装 Google Drive 挂载应用..."
+
+# 创建必要的目录
+mkdir -p /tmp/fn-google-drive/config
+mkdir -p /vol1/GoogleDrive
+
+# 检查rclone是否安装
+if ! command -v rclone &> /dev/null; then
+    echo "警告: rclone 未安装，请先在应用中心安装 rclone"
+fi
+
+# 检查fuse是否支持
+if ! command -v fusermount &> /dev/null; then
+    echo "警告: fuse 未安装，挂载功能可能无法使用"
+fi
+
+echo "安装准备完成"
+exit 0

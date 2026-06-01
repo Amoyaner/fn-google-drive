@@ -1,0 +1,13 @@
+{
+  ".url": {
+    "fn-google-drive.main": {
+      "title": "Google Drive 挂载",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "http",
+      "port": "18900",
+      "url": "/",
+      "allUsers": true
+    }
+  }
+}

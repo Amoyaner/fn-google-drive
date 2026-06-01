@@ -1,0 +1,22 @@
+#!/bin/bash
+# 配置变更后脚本
+
+echo "配置更新完成，正在重启..."
+
+# 重新启动应用
+cd "$TRIM_APPDEST/server"
+export PATH=/vol1/@appcenter/nodejs_v22/bin:$PATH
+nohup node server.js > /tmp/fn-google-drive/config/server.log 2>&1 &
+echo $! > /tmp/fn-google-drive/config/server.pid
+
+# 等待服务启动
+sleep 2
+
+if [ -f "/tmp/fn-google-drive/config/server.pid" ] && kill -0 $(cat /tmp/fn-google-drive/config/server.pid) 2>/dev/null; then
+    echo "重启成功"
+else
+    echo "重启失败"
+    exit 1
+fi
+
+exit 0

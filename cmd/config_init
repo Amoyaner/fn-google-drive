@@ -1,0 +1,17 @@
+#!/bin/bash
+# 配置变更前脚本
+
+echo "准备更新配置..."
+
+# 停止应用
+if [ -f "/tmp/fn-google-drive/config/server.pid" ]; then
+    PID=$(cat /tmp/fn-google-drive/config/server.pid)
+    if kill -0 "$PID" 2>/dev/null; then
+        echo "停止应用..."
+        kill "$PID"
+        sleep 2
+    fi
+fi
+
+echo "配置更新准备完成"
+exit 0

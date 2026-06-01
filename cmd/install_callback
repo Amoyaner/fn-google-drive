@@ -1,0 +1,22 @@
+#!/bin/bash
+# 安装后脚本
+
+echo "安装完成，正在初始化..."
+
+# 安装Node.js依赖
+cd "$TRIM_APPDEST/server"
+if [ -f "package.json" ]; then
+    echo "安装Node.js依赖..."
+    export PATH=/vol1/@appcenter/nodejs_v22/bin:$PATH
+    npm install --production
+fi
+
+# 设置权限
+chmod +x "$TRIM_APPDEST/cmd/"*
+chmod 755 /tmp/fn-google-drive/config
+
+# 创建挂载点
+mkdir -p /vol1/GoogleDrive
+
+echo "初始化完成"
+exit 0

@@ -1,0 +1,32 @@
+#!/bin/bash
+# 卸载后脚本
+
+echo "卸载完成，正在清理..."
+
+# 清理临时文件
+rm -rf /tmp/fn-google-drive
+
+# 清理挂载点（保留目录，只清空内容）
+# 注意：不删除 /vol1/GoogleDrive 目录，避免误删用户数据
+
+# 清理飞牛挂载配置中的条目
+if [ -f "/etc/mountmgr/mount_info.json" ]; then
+    # 备份配置
+    cp /etc/mountmgr/mount_info.json /etc/mountmgr/mount_info.json.bak
+    
+    # 移除Google Drive条目
+    python3 -c "
+import json
+try:
+    with open('/etc/mountmgr/mount_info.json', 'r') as f:
+        data = json.load(f)
+    data = [item for item in data if item.get('source') != 'fn-google-drive']
+    with open('/etc/mountmgr/mount_info.json', 'w') as f:
+        json.dump(data, f, indent=2)
+except:
+    pass
+" 2>/dev/null || true
+fi
+
+echo "清理完成"
+exit 0

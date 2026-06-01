@@ -1,0 +1,24 @@
+#!/bin/bash
+# 卸载前脚本
+
+echo "准备卸载 Google Drive 挂载应用..."
+
+# 停止挂载
+if [ -f "/tmp/fn-google-drive/config/mount.pid" ]; then
+    MOUNT_PID=$(cat /tmp/fn-google-drive/config/mount.pid)
+    if kill -0 "$MOUNT_PID" 2>/dev/null; then
+        fusermount -u /vol1/GoogleDrive 2>/dev/null || umount /vol1/GoogleDrive 2>/dev/null
+        kill "$MOUNT_PID" 2>/dev/null
+    fi
+fi
+
+# 停止服务器
+if [ -f "/tmp/fn-google-drive/config/server.pid" ]; then
+    PID=$(cat /tmp/fn-google-drive/config/server.pid)
+    if kill -0 "$PID" 2>/dev/null; then
+        kill "$PID"
+    fi
+fi
+
+echo "卸载准备完成"
+exit 0

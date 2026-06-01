@@ -1,0 +1,87 @@
+#!/bin/bash
+# 启动/停止/状态检查脚本
+
+APP_NAME="fn-google-drive"
+APP_DIR="$TRIM_APPDEST"
+PID_FILE="/tmp/fn-google-drive/config/server.pid"
+LOG_FILE="/tmp/fn-google-drive/config/server.log"
+
+# 设置PATH
+export PATH=/vol1/@appcenter/nodejs_v22/bin:$PATH
+
+case "$1" in
+    start)
+        if [ -f "$PID_FILE" ] && kill -0 $(cat "$PID_FILE") 2>/dev/null; then
+            echo "应用已在运行"
+            exit 0
+        fi
+        
+        echo "启动 $APP_NAME..."
+        mkdir -p /tmp/fn-google-drive/config
+        
+        cd "$APP_DIR/server"
+        nohup node server.js > "$LOG_FILE" 2>&1 &
+        echo $! > "$PID_FILE"
+        
+        # 等待服务启动
+        sleep 2
+        
+        if [ -f "$PID_FILE" ] && kill -0 $(cat "$PID_FILE") 2>/dev/null; then
+            echo "启动成功"
+            exit 0
+        else
+            echo "启动失败"
+            exit 1
+        fi
+        ;;
+        
+    stop)
+        # 先停止挂载
+        if [ -f "/tmp/fn-google-drive/config/mount.pid" ]; then
+            MOUNT_PID=$(cat /tmp/fn-google-drive/config/mount.pid)
+            if kill -0 "$MOUNT_PID" 2>/dev/null; then
+                fusermount -u /vol1/GoogleDrive 2>/dev/null || umount /vol1/GoogleDrive 2>/dev/null
+                kill "$MOUNT_PID" 2>/dev/null
+            fi
+            rm -f /tmp/fn-google-drive/config/mount.pid
+        fi
+        
+        # 停止服务器
+        if [ -f "$PID_FILE" ]; then
+            PID=$(cat "$PID_FILE")
+            if kill -0 "$PID" 2>/dev/null; then
+                echo "停止 $APP_NAME..."
+                kill "$PID"
+                rm -f "$PID_FILE"
+                echo "已停止"
+            else
+                echo "进程不存在"
+                rm -f "$PID_FILE"
+            fi
+        else
+            echo "应用未运行"
+        fi
+        exit 0
+        ;;
+        
+    status)
+        if [ -f "$PID_FILE" ] && kill -0 $(cat "$PID_FILE") 2>/dev/null; then
+            echo "运行中"
+            exit 0
+        else
+            echo "未运行"
+            exit 3
+        fi
+        ;;
+        
+    restart)
+        $0 stop
+        sleep 2
+        $0 start
+        ;;
+        
+    *)
+        echo "用法: $0 {start|stop|status|restart}"
+        exit 1
+        ;;
+esac
